@@ -21,7 +21,7 @@ import (
 )
 
 var userMgmtCollection *mongo.Collection = configs.GetCollection(configs.DB, "userMgmt")
-var validate = validator.New()
+var Validate = validator.New()
 
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -43,7 +43,7 @@ func RegisterUser() gin.HandlerFunc {
 			return
 		}
 
-		if validationErr := validate.Struct(&user); validationErr != nil {
+		if validationErr := Validate.Struct(&user); validationErr != nil {
 			log.Fatal("Validation Error", validationErr)
 			c.JSON(http.StatusBadRequest, responses.ExamResponse{Status: http.StatusBadRequest, Message: "Error", Data: map[string]interface{}{"data": validationErr.Error()}})
 			return
@@ -97,6 +97,7 @@ func GetUserByType() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("---")
 		log.Println(c.Get("user_type"))
+		var users []models.User
 		// if err := helpers.CheckUserType(c, "ADMIN"); err != nil {
 		// 	c.JSON(http.StatusBadRequest, responses.ExamResponse{Status: http.StatusBadRequest, Message: "Error", Data: map[string]interface{}{"data": err.Error()}})
 		// 	return
@@ -107,7 +108,7 @@ func GetUserByType() gin.HandlerFunc {
 		log.Println("-", userType)
 		defer cancel()
 
-		var user models.User
+		// var user models.User
 		if userType == "ADMIN" {
 			c.JSON(http.StatusBadRequest, responses.ExamResponse{Status: http.StatusBadRequest, Message: "Error", Data: map[string]interface{}{"data": "Admin details are restricred"}})
 			return
@@ -125,15 +126,27 @@ func GetUserByType() gin.HandlerFunc {
 			return
 		}
 
-		filter := bson.D{{"userType", userType}}
+		filter := bson.M{"user_type": userType}
 		result, err := userMgmtCollection.Find(ctx, filter)
-		result.Decode(&user)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, responses.ExamResponse{Status: http.StatusBadRequest, Message: "Error", Data: map[string]interface{}{"data": err.Error()}})
 			return
 		}
 
-		c.JSON(http.StatusOK, responses.ExamResponse{Status: http.StatusOK, Message: "Success", Data: map[string]interface{}{"data": user}})
+		//reading data one by one
+		defer result.Close(ctx)
+		for result.Next(ctx) {
+			var singleUser models.User
+
+			if err := result.Decode(&singleUser); err != nil {
+				c.JSON(http.StatusInternalServerError, responses.ExamResponse{Status: http.StatusInternalServerError, Message: "Error", Data: map[string]interface{}{"data": err.Error()}})
+				return
+			}
+
+			users = append(users, singleUser)
+		}
+		// resp := responses.UserResponse(&users)
+		c.JSON(http.StatusOK, responses.ExamResponse{Status: http.StatusOK, Message: "Success", Data: map[string]interface{}{"data": users}})
 	}
 }
 
@@ -216,7 +229,8 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, responses.ExamResponse{Status: http.StatusInternalServerError, Message: "Error", Data: map[string]interface{}{"data": err.Error()}})
 			return
 		}
-		c.JSON(http.StatusOK, founduser)
+		resp := responses.LoginResponse{Token: token, RefreshToken: refreshToken}
+		c.JSON(http.StatusOK, resp)
 
 	}
 }

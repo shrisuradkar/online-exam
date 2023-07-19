@@ -9,9 +9,8 @@ import (
 
 func AuthRoutes(router *gin.Engine) {
 	router.Use(middleware.Authenticate())
-
 	router.GET("/getUserByType/:userType", controller.GetUserByType())
-	router.DELETE("/deleteUserByType/:userId", controller.DeleteUser())
-	router.PUT("/editUserByType/:userId", controller.EditUser())
+	router.DELETE("/deleteUser/:userId", controller.DeleteUser())
+	router.PUT("/editUser/:userId", controller.EditUser())
 
 }
