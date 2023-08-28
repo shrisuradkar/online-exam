@@ -66,7 +66,7 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 
 ## Acknowledgements
 
-- [Gin](https://github.com/shrisuradkar/online-exam-go-gin-monogdb) - HTTP web framework for Go
+- [Gin](https://github.com/gin-gonic/gin) - HTTP web framework for Go
 - [MongoDB Go Driver](https://github.com/mongodb/mongo-go-driver) - Official MongoDB driver for Go
 
 ## Support
